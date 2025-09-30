@@ -1,74 +1,143 @@
 ﻿using System;
 
-class Warehouse
+public class Warehouse
 {
     private string name;
     private string location;
     private int capacity;
-    private int used;
+    private int currentLoad;
     private WarehouseType type;
 
-    public Warehouse(string name, string location, int capacity, int used, WarehouseType type)
+ 
+    private static int objectCount = 0;
+
+    // Властивості
+    public string Name
     {
-        SetName(name);
-        SetLocation(location);
-        SetCapacity(capacity);
-        SetUsed(used);
-        this.type = type;
+        get => name;
+        set => name = !string.IsNullOrWhiteSpace(value) ? value : "NoName";
     }
 
-    public void SetName(string name)
+    public string Location
     {
-        if (name.Length >= 3 && name.Length <= 20) this.name = name;
-        else throw new ArgumentException("Назва складу повинна бути від 3 до 20 символів.");
+        get => location;
+        set => location = !string.IsNullOrWhiteSpace(value) ? value : "Unknown";
     }
 
-    public void SetLocation(string location)
+    public int Capacity
     {
-        if (location.Length >= 2) this.location = location;
-        else throw new ArgumentException("Місто повинно містити щонайменше 2 символи.");
+        get => capacity;
+        set => capacity = value > 0 ? value : 100;
     }
 
-    public void SetCapacity(int capacity)
+    public int CurrentLoad
     {
-        if (capacity > 0 && capacity <= 5000) this.capacity = capacity;
-        else throw new ArgumentException("Місткість повинна бути в межах 1–5000.");
+        get => currentLoad;
+        set => currentLoad = (value >= 0 && value <= capacity) ? value : 0;
     }
 
-    public void SetUsed(int used)
+    public WarehouseType Type
     {
-        if (used >= 0 && used <= capacity) this.used = used;
-        else throw new ArgumentException("Зайнятість повинна бути в межах 0–місткість.");
+        get => type;
+        set => type = value;
+    }
+
+    public bool IsOverloaded => currentLoad > capacity;
+
+    // Конструктори
+    public Warehouse()
+    {
+        Name = "NoName";
+        Location = "Unknown";
+        Capacity = 100;
+        CurrentLoad = 0;
+        Type = WarehouseType.Temporary;
+        objectCount++;
+    }
+
+    public Warehouse(string name, string location, int capacity)
+    {
+        Name = name;
+        Location = location;
+        Capacity = capacity;
+        CurrentLoad = 0;
+        Type = WarehouseType.Regional;
+        objectCount++;
+    }
+
+    public Warehouse(string name, string location, int capacity, int currentLoad, WarehouseType type)
+    {
+        Name = name;
+        Location = location;
+        Capacity = capacity;
+        CurrentLoad = currentLoad;
+        Type = type;
+        objectCount++;
+    }
+
+    // Методи
+    public void AddCargo(int amount)
+    {
+        if (currentLoad + amount <= capacity)
+            currentLoad += amount;
+        else
+            Console.WriteLine("⚠ Перевищено місткість складу!");
+    }
+
+    public void AddCargo() => AddCargo(100);
+
+    public void RemoveCargo(int amount)
+    {
+        if (currentLoad - amount >= 0)
+            currentLoad -= amount;
+        else
+            Console.WriteLine("⚠ Недостатньо вантажу на складі!");
     }
 
     public string GetInfo()
     {
-        return $"Назва: {name}, Місто: {location}, Місткість: {capacity}, Зайнято: {used}, Тип: {type}";
+        return $"Склад: {Name}, Місто: {Location}, Місткість: {Capacity}т, Завантажено: {CurrentLoad}т, Тип: {Type}";
     }
 
-    public void AddCargo(int amount)
+    //  Перевизначення ToString()
+    public override string ToString()
     {
-        if (used + amount <= capacity)
+        return GetInfo();
+    }
+
+    //  Static методи
+    public static Warehouse Parse(string s)
+    {
+        // Формат рядка: "Name;Location;Capacity;CurrentLoad;Type"
+        var parts = s.Split(';');
+        if (parts.Length != 5)
+            throw new FormatException("❌ Невірний формат рядка для Parse!");
+
+        return new Warehouse(
+            parts[0],
+            parts[1],
+            int.Parse(parts[2]),
+            int.Parse(parts[3]),
+            Enum.Parse<WarehouseType>(parts[4])
+        );
+    }
+
+    public static bool TryParse(string s, out Warehouse result)
+    {
+        try
         {
-            used += amount;
-            Console.WriteLine($"  → Додано {amount} палет: тепер {used}/{capacity}.");
+            result = Parse(s);
+            return true;
         }
-        else
+        catch
         {
-            Console.WriteLine("  → Недостатньо місця для додавання вантажу.");
+            result = null;
+            return false;
         }
     }
 
-    public void RemoveCargo(int amount)
+    public static int GetObjectCount()
     {
-        if (used - amount >= 0)
-        {
-            used -= amount;
-            Console.WriteLine($"  → Відвантажено {amount} палет: тепер {used}/{capacity}.");
-        }
-        else
-        {
-            Console.WriteLine("  → Неможливо відвантажити таку кількість палет.");
-        }
+        return objectCount;
     }
 }
